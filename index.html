@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Spell It</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --border: #334155;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --accent: #6366f1;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Top bar ──────────────────────────────── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    flex-shrink: 0;
+  }
+  .top-bar .title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .top-bar .title span { color: var(--accent); }
+
+  .stats-row {
+    display: flex;
+    gap: 18px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .stats-row .val { color: var(--text); font-weight: 600; }
+  .stats-row .streak-val { color: var(--warning); font-weight: 600; }
+
+  /* ── Theme dots ───────────────────────────── */
+  .theme-dots {
+    display: flex; gap: 6px; flex-shrink: 0;
+  }
+  .theme-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.2s;
+  }
+  .theme-dot:hover { transform: scale(1.15); }
+  .theme-dot.active { border-color: var(--text); }
+  .dot-indigo { background: #6366f1; }
+  .dot-light  { background: #e2e8f0; }
+  .dot-ocean  { background: #0ea5e9; }
+  .dot-forest { background: #22c55e; }
+  .dot-sunset { background: #f472b6; }
+
+  /* ── Word area ────────────────────────────── */
+  .word-zone {
+    text-align: center;
+    padding: 8px 20px 12px;
+    flex-shrink: 0;
+  }
+  .word-meaning {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--warning);
+    min-height: 2rem;
+    margin-bottom: 2px;
+  }
+  .word-hint {
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-height: 1.2rem;
+  }
+  .speak-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 2px solid var(--accent); background: var(--accent);
+    color: #fff; font-size: 1.5rem; cursor: pointer;
+    transition: all 0.2s; margin: 8px auto 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .speak-btn:hover { transform: scale(1.06); filter: brightness(1.1); }
+  .speak-btn:active { transform: scale(0.94); }
+  .speak-btn.speaking {
+    border-color: var(--warning); background: var(--warning);
+    animation: pulse 0.7s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.5); }
+    50% { box-shadow: 0 0 0 20px rgba(245,158,11,0); }
+  }
+
+  /* ── Letter slots ─────────────────────────── */
+  .slots-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 20px 12px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .slot {
+    width: 50px;
+    height: 56px;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-transform: lowercase;
+    transition: all 0.12s;
+  }
+  .slot.filled {
+    border-style: solid;
+    border-color: var(--accent);
+    background: rgba(99,102,241,0.18);
+    animation: pop 0.18s ease;
+  }
+  .slot.correct { border-color: var(--success); background: rgba(34,197,94,0.18); }
+  .slot.wrong   { border-color: var(--error);   background: rgba(239,68,68,0.18); }
+  @keyframes pop {
+    0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); }
+  }
+
+  /* ── Feedback ─────────────────────────────── */
+  .feedback-line {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-height: 1.4rem;
+    padding: 0 20px 4px;
+    flex-shrink: 0;
+  }
+  .feedback-line.ok { color: var(--success); }
+  .feedback-line.no { color: var(--error); }
+
+  /* ── Keyboard ─────────────────────────────── */
+  .keyboard-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 12px 10px;
+    max-width: 700px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .key-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .key-row.mid { padding: 0 14px; }
+
+  .key {
+    flex: 1;
+    max-width: 52px;
+    aspect-ratio: 0.85;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-transform: lowercase;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .key:hover  { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .key:active { transform: scale(0.88); }
+
+  .key.wide {
+    flex: 1.5;
+    max-width: 78px;
+    font-size: 0.9rem;
+    text-transform: none;
+  }
+  .key.danger:hover { background: var(--error); border-color: var(--error); }
+  .key.check  { background: var(--success); border-color: var(--success); color: #000; }
+  .key.check:hover { filter: brightness(1.15); }
+
+  /* ── Bottom actions ───────────────────────── */
+  .bottom-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 8px 20px 16px;
+    flex-shrink: 0;
+  }
+  .act-btn {
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .act-btn:hover { border-color: var(--accent); color: var(--text); }
+  .act-btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Difficulty ───────────────────────────── */
+  .diff-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 0 20px 6px;
+    flex-shrink: 0;
+  }
+  .diff-chip {
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .diff-chip:hover { border-color: var(--accent); color: var(--text); }
+  .diff-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Confetti ─────────────────────────────── */
+  .confetti-wrap {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 999;
+  }
+  .confetti-piece {
+    position: absolute; width: 10px; height: 10px; border-radius: 2px;
+    animation: fall 1.2s ease-out forwards;
+  }
+  @keyframes fall {
+    0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ── Themes ───────────────────────────────── */
+  [data-theme="light"] {
+    --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0;
+    --text: #1e293b; --muted: #94a3b8; --accent: #6366f1;
+    --success: #16a34a; --error: #dc2626; --warning: #d97706;
+  }
+  [data-theme="ocean"] {
+    --bg: #0c1929; --surface: #122738; --border: #1e4058;
+    --text: #e0f2fe; --muted: #7ca8c9; --accent: #0ea5e9;
+    --success: #10b981; --error: #f43f5e; --warning: #f59e0b;
+  }
+  [data-theme="forest"] {
+    --bg: #0d1a0e; --surface: #162818; --border: #2d4a2f;
+    --text: #dcfce7; --muted: #7baa7d; --accent: #22c55e;
+    --success: #16a34a; --error: #ef4444; --warning: #eab308;
+  }
+  [data-theme="sunset"] {
+    --bg: #1a0f14; --surface: #2d1a22; --border: #4a2d38;
+    --text: #ffe4e6; --muted: #c9a0ae; --accent: #f472b6;
+    --success: #34d399; --error: #f87171; --warning: #fbbf24;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <div class="title">🔤 <span>Spell</span> It</div>
+  <div class="stats-row">
+    <span>得分 <span class="val" id="score">0</span></span>
+    <span>连击 <span class="streak-val" id="streak">0</span></span>
+    <span>第 <span class="val" id="round">0</span> 轮</span>
+  </div>
+  <div class="theme-dots">
+    <div class="theme-dot dot-indigo active" data-theme="indigo"></div>
+    <div class="theme-dot dot-light"  data-theme="light"></div>
+    <div class="theme-dot dot-ocean"  data-theme="ocean"></div>
+    <div class="theme-dot dot-forest" data-theme="forest"></div>
+    <div class="theme-dot dot-sunset" data-theme="sunset"></div>
+  </div>
+</div>
+
+<!-- Difficulty -->
+<div class="diff-row" id="diffRow">
+  <button class="diff-chip active" data-level="easy">🌱 Easy</button>
+  <button class="diff-chip" data-level="medium">🌿 Medium</button>
+  <button class="diff-chip" data-level="hard">🌳 Hard</button>
+</div>
+
+<!-- Word + speak -->
+<div class="word-zone">
+  <div class="word-meaning" id="wordMeaning"></div>
+  <div class="word-hint" id="wordHint">点击喇叭听单词，然后拼写</div>
+  <button class="speak-btn" id="speakBtn">🔊</button>
+</div>
+
+<!-- Letter slots -->
+<div class="slots-row" id="slotsRow"></div>
+
+<!-- Feedback -->
+<div class="feedback-line" id="feedbackLine"></div>
+
+<!-- Keyboard fills remaining space -->
+<div class="keyboard-wrap" id="keyboardWrap"></div>
+
+<!-- Bottom actions -->
+<div class="bottom-actions">
+  <button class="act-btn" id="revealBtn">👁 显示</button>
+  <button class="act-btn" id="skipBtn">⏭ 跳过</button>
+  <button class="act-btn accent" id="newBtn">🎲 换词</button>
+</div>
+
+<div class="confetti-wrap" id="confettiWrap"></div>
+
+<script>
+(function() {
+  const wordLists = {
+    easy: [
+      { w:'apple', m:'苹果' },{ w:'book', m:'书' },{ w:'cat', m:'猫' },
+      { w:'dog', m:'狗' },{ w:'fish', m:'鱼' },{ w:'happy', m:'快乐的' },
+      { w:'house', m:'房子' },{ w:'school', m:'学校' },{ w:'tree', m:'树' },
+      { w:'water', m:'水' },{ w:'family', m:'家庭' },{ w:'friend', m:'朋友' },
+      { w:'music', m:'音乐' },{ w:'table', m:'桌子' },{ w:'garden', m:'花园' },
+    ],
+    medium: [
+      { w:'beautiful', m:'美丽的' },{ w:'chocolate', m:'巧克力' },
+      { w:'dinosaur', m:'恐龙' },{ w:'elephant', m:'大象' },
+      { w:'favorite', m:'最喜欢的' },{ w:'guitar', m:'吉他' },
+      { w:'hospital', m:'医院' },{ w:'language', m:'语言' },
+      { w:'library', m:'图书馆' },{ w:'mountain', m:'山' },
+      { w:'neighbor', m:'邻居' },{ w:'puzzle', m:'拼图' },
+      { w:'sandwich', m:'三明治' },{ w:'tomorrow', m:'明天' },
+      { w:'umbrella', m:'雨伞' },
+    ],
+    hard: [
+      { w:'accommodation', m:'住宿' },{ w:'bureaucracy', m:'官僚' },
+      { w:'conscience', m:'良心' },{ w:'embarrassment', m:'尴尬' },
+      { w:'fluorescent', m:'荧光' },{ w:'guarantee', m:'保证' },
+      { w:'hierarchy', m:'等级' },{ w:'kaleidoscope', m:'万花筒' },
+      { w:'lieutenant', m:'中尉' },{ w:'maneuver', m:'策略' },
+      { w:'nauseous', m:'恶心' },{ w:'onomatopoeia', m:'拟声词' },
+      { w:'pharaoh', m:'法老' },{ w:'questionnaire', m:'问卷' },
+      { w:'renaissance', m:'文艺复兴' },{ w:'silhouette', m:'剪影' },
+      { w:'tyrannosaurus', m:'霸王龙' },{ w:'xylophone', m:'木琴' },
+    ],
+  };
+
+  const $ = id => document.getElementById(id);
+  let cur = null, score = 0, streak = 0, best = 0, rnd = 0;
+  let level = 'easy', revealed = false, letters = [];
+  const used = { easy:[], medium:[], hard:[] };
+
+  // ── Theme ──────────────────────────────────
+  const dots = document.querySelectorAll('.theme-dot');
+  const saved = localStorage.getItem('spell-it-theme') || 'indigo';
+  document.body.dataset.theme = saved;
+  dots.forEach(d => {
+    d.classList.toggle('active', d.dataset.theme === saved);
+    d.addEventListener('click', () => {
+      document.body.dataset.theme = d.dataset.theme;
+      dots.forEach(t => t.classList.remove('active'));
+      d.classList.add('active');
+      localStorage.setItem('spell-it-theme', d.dataset.theme);
+    });
+  });
+
+  // ── Speech ─────────────────────────────────
+  function speak(text, rate = 0.8) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = rate; u.pitch = 1;
+    const voices = speechSynthesis.getVoices();
+    const v = voices.find(x => x.lang === 'en-US' && x.name.includes('Google'))
+           || voices.find(x => x.lang === 'en-US')
+           || voices.find(x => x.lang.startsWith('en'));
+    if (v) u.voice = v;
+    const btn = $('speakBtn');
+    btn.classList.add('speaking');
+    u.onend = () => btn.classList.remove('speaking');
+    u.onerror = () => btn.classList.remove('speaking');
+    speechSynthesis.speak(u);
+  }
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+
+  // ── Confetti ───────────────────────────────
+  function confetti() {
+    const cols = ['#6366f1','#22c55e','#f59e0b','#ef4444','#ec4899','#3b82f6'];
+    const f = document.createDocumentFragment();
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div'); p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = -(Math.random() * 40) + 'px';
+      p.style.background = cols[~~(Math.random() * cols.length)];
+      p.style.animationDelay = Math.random() * 0.5 + 's';
+      p.style.animationDuration = (0.8 + Math.random() * 1.2) + 's';
+      p.style.width = p.style.height = (5 + Math.random() * 10) + 'px';
+      f.appendChild(p);
+    }
+    $('confettiWrap').appendChild(f);
+    setTimeout(() => { $('confettiWrap').innerHTML = ''; }, 2000);
+  }
+
+  // ── Word ───────────────────────────────────
+  function pick() {
+    const list = wordLists[level];
+    const avail = list.filter(w => !used[level].includes(w.w));
+    if (!avail.length) { used[level] = []; return list[~~(Math.random() * list.length)]; }
+    return avail[~~(Math.random() * avail.length)];
+  }
+
+  function load() {
+    cur = pick();
+    if (!cur) return;
+    used[level].push(cur.w);
+    revealed = false; letters = [];
+    $('wordMeaning').textContent = '';
+    $('wordHint').textContent = '点击 🔊 听单词，然后拼写';
+    $('feedbackLine').textContent = '';
+    $('feedbackLine').className = 'feedback-line';
+    $('revealBtn').style.display = '';
+    buildSlots();
+    buildKeys();
+    renderSlots();
+  }
+
+  // ── Slots ──────────────────────────────────
+  function buildSlots() {
+    const el = $('slotsRow');
+    el.innerHTML = '';
+    for (let i = 0; i < cur.w.length; i++) {
+      const d = document.createElement('div'); d.className = 'slot';
+      d.textContent = ''; el.appendChild(d);
+    }
+  }
+
+  function renderSlots() {
+    const slots = $('slotsRow').children;
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      s.className = 'slot';
+      if (i < letters.length) { s.textContent = letters[i]; s.classList.add('filled'); }
+      else { s.textContent = ''; }
+    }
+  }
+
+  function addLetter(l) {
+    if (!cur || revealed || letters.length >= cur.w.length) return;
+    letters.push(l); renderSlots();
+  }
+  function delLetter() { if (letters.length) { letters.pop(); renderSlots(); } }
+  function clearLetters() { letters = []; renderSlots(); }
+
+  // ── Keyboard ───────────────────────────────
+  function buildKeys() {
+    const rows = ['qwertyuiop'.split(''), 'asdfghjkl'.split(''), 'zxcvbnm'.split('')];
+    const wrap = $('keyboardWrap');
+    wrap.innerHTML = '';
+    rows.forEach((rl, ri) => {
+      const rd = document.createElement('div');
+      rd.className = 'key-row' + (ri === 1 ? ' mid' : '');
+      rl.forEach(l => {
+        const k = document.createElement('button'); k.className = 'key';
+        k.textContent = l;
+        k.addEventListener('click', () => addLetter(l));
+        rd.appendChild(k);
+      });
+      wrap.appendChild(rd);
+    });
+    // Action row
+    const ar = document.createElement('div'); ar.className = 'key-row';
+    const del = document.createElement('button'); del.className = 'key wide danger';
+    del.textContent = '⌫'; del.addEventListener('click', delLetter);
+    const clr = document.createElement('button'); clr.className = 'key wide';
+    clr.textContent = '✕'; clr.addEventListener('click', clearLetters);
+    const chk = document.createElement('button'); chk.className = 'key wide check';
+    chk.textContent = '✓'; chk.addEventListener('click', check);
+    ar.appendChild(del); ar.appendChild(clr); ar.appendChild(chk);
+    wrap.appendChild(ar);
+  }
+
+  // ── Check ──────────────────────────────────
+  function check() {
+    if (!cur || revealed) return;
+    const ans = letters.join('');
+    if (!ans) return;
+    const ok = ans.toLowerCase() === cur.w.toLowerCase();
+    const slots = $('slotsRow').children;
+    if (ok) {
+      for (const s of slots) s.classList.add('correct');
+      $('feedbackLine').textContent = '✅ 正确！太棒了！';
+      $('feedbackLine').className = 'feedback-line ok';
+      score += level === 'hard' ? 30 : level === 'medium' ? 20 : 10;
+      streak++; if (streak > best) best = streak;
+      confetti();
+    } else {
+      for (let i = 0; i < slots.length; i++) {
+        slots[i].classList.add((letters[i]||'').toLowerCase() === cur.w[i].toLowerCase() ? 'correct' : 'wrong');
+      }
+      $('feedbackLine').textContent = '❌ 不对哦，正确拼写是：' + cur.w;
+      $('feedbackLine').className = 'feedback-line no';
+      streak = 0; revealed = true;
+    }
+    rnd++; updateStats();
+    if (ok) setTimeout(load, 1200);
+  }
+
+  function reveal() {
+    if (!cur) return;
+    letters = cur.w.split(''); renderSlots();
+    $('wordMeaning').textContent = '💡 ' + cur.m;
+    $('feedbackLine').textContent = '👁 已显示答案';
+    $('feedbackLine').className = 'feedback-line';
+    revealed = true; streak = 0; rnd++; updateStats();
+    $('revealBtn').style.display = 'none';
+  }
+
+  function skip() {
+    if (!cur) return;
+    $('feedbackLine').textContent = '正确答案：' + cur.w;
+    $('feedbackLine').className = 'feedback-line';
+    streak = 0; rnd++; updateStats();
+    letters = []; load();
+  }
+
+  function updateStats() {
+    $('score').textContent = score;
+    $('streak').textContent = (streak > 0 ? streak : best) + (streak >= 3 ? ' 🔥' : '');
+    $('round').textContent = rnd;
+  }
+
+  // ── Events ─────────────────────────────────
+  $('speakBtn').addEventListener('click', () => {
+    if (cur) {
+      speak(cur.w);
+      $('wordHint').textContent = '🔊 正在播放...';
+      $('wordMeaning').textContent = '🎯 ' + cur.m;
+    }
+  });
+
+  $('revealBtn').addEventListener('click', reveal);
+  $('skipBtn').addEventListener('click', skip);
+  $('newBtn').addEventListener('click', () => { rnd++; updateStats(); load(); });
+
+  // Difficulty
+  document.querySelectorAll('.diff-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diff-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      level = btn.dataset.level;
+      score = 0; streak = 0; best = 0; rnd = 0; letters = [];
+      used.easy = []; used.medium = []; used.hard = [];
+      updateStats(); load();
+    });
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.code === 'Space') { e.preventDefault(); $('speakBtn').click(); return; }
+    if (!cur || revealed) return;
+    if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) { e.preventDefault(); addLetter(e.key.toLowerCase()); }
+    else if (e.key === 'Backspace') { e.preventDefault(); delLetter(); }
+    else if (e.key === 'Enter') { e.preventDefault(); check(); }
+    else if (e.key === 'Escape') { e.preventDefault(); clearLetters(); }
+  });
+
+  // Init
+  load(); updateStats();
+})();
+</script>
+</body>
+</html>

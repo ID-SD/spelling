@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spelling Bee - English Word Spelling Game</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --radius: 12px;
+    --slot-bg: rgba(99,102,241,0.08);
+    --key-bg: #1e293b;
+    --key-hover: #6366f1;
+  }
+
+  /* ── Themes ──────────────────────────────────── */
+  [data-theme="light"] {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --success: #16a34a;
+    --error: #dc2626;
+    --warning: #d97706;
+    --slot-bg: rgba(99,102,241,0.06);
+    --key-bg: #f1f5f9;
+    --key-hover: #6366f1;
+  }
+
+  [data-theme="ocean"] {
+    --bg: #0c1929;
+    --card: #122738;
+    --border: #1e4058;
+    --text: #e0f2fe;
+    --muted: #7ca8c9;
+    --accent: #0ea5e9;
+    --accent-hover: #38bdf8;
+    --success: #10b981;
+    --error: #f43f5e;
+    --warning: #f59e0b;
+    --slot-bg: rgba(14,165,233,0.08);
+    --key-bg: #122738;
+    --key-hover: #0ea5e9;
+  }
+
+  [data-theme="forest"] {
+    --bg: #0d1a0e;
+    --card: #162818;
+    --border: #2d4a2f;
+    --text: #dcfce7;
+    --muted: #7baa7d;
+    --accent: #22c55e;
+    --accent-hover: #4ade80;
+    --success: #16a34a;
+    --error: #ef4444;
+    --warning: #eab308;
+    --slot-bg: rgba(34,197,94,0.08);
+    --key-bg: #162818;
+    --key-hover: #22c55e;
+  }
+
+  [data-theme="sunset"] {
+    --bg: #1a0f14;
+    --card: #2d1a22;
+    --border: #4a2d38;
+    --text: #ffe4e6;
+    --muted: #c9a0ae;
+    --accent: #f472b6;
+    --accent-hover: #f9a8d4;
+    --success: #34d399;
+    --error: #f87171;
+    --warning: #fbbf24;
+    --slot-bg: rgba(244,114,182,0.08);
+    --key-bg: #2d1a22;
+    --key-hover: #f472b6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 36px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    position: relative;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  /* ── Theme picker ────────────────────────────── */
+  .theme-picker {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+  }
+
+  .theme-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .theme-dot:hover { transform: scale(1.2); }
+  .theme-dot.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--text); }
+
+  .theme-dot.indigo { background: linear-gradient(135deg, #6366f1, #1e293b); }
+  .theme-dot.light  { background: linear-gradient(135deg, #e2e8f0, #ffffff); }
+  .theme-dot.ocean  { background: linear-gradient(135deg, #0ea5e9, #0c1929); }
+  .theme-dot.forest { background: linear-gradient(135deg, #22c55e, #0d1a0e); }
+  .theme-dot.sunset { background: linear-gradient(135deg, #f472b6, #2d1a22); }
+
+  /* ── Header ──────────────────────────────────── */
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+  .header h1 .bee { display: inline-block; animation: buzz 0.6s ease-in-out infinite alternate; }
+  @keyframes buzz { from { transform: rotate(-3deg) translateY(0); } to { transform: rotate(3deg) translateY(-2px); } }
+  .header p { color: var(--muted); margin-top: 4px; font-size: 0.9rem; }
+
+  /* ── Difficulty ──────────────────────────────── */
+  .difficulty-bar {
+    display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .diff-btn {
+    padding: 7px 16px; border-radius: 999px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer;
+    font-size: 0.82rem; font-weight: 500; transition: all 0.2s;
+  }
+  .diff-btn:hover { border-color: var(--accent); color: var(--text); }
+  .diff-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Stats ───────────────────────────────────── */
+  .stats { display: flex; justify-content: center; gap: 28px; margin-bottom: 24px; }
+  .stat { text-align: center; }
+  .stat .value { font-size: 1.5rem; font-weight: 700; }
+  .stat .value.score { color: var(--accent); }
+  .stat .value.streak { color: var(--warning); }
+  .stat .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Word area ───────────────────────────────── */
+  .word-area {
+    text-align: center; margin-bottom: 24px; padding: 16px;
+    background: var(--slot-bg); border-radius: var(--radius);
+  }
+  .word-hint { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+  .word-meaning { font-size: 1.1rem; color: var(--warning); margin-bottom: 4px; }
+  .word-meaning.big { font-size: 1.4rem; margin-bottom: 10px; }
+
+  .speaker-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .speak-btn {
+    width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--accent);
+    background: var(--accent); color: #fff; cursor: pointer; font-size: 1.3rem;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+  }
+  .speak-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: scale(1.05); }
+  .speak-btn:active { transform: scale(0.95); }
+  .speak-btn.speaking {
+    animation: pulse 0.8s ease-in-out infinite; border-color: var(--warning); background: var(--warning);
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+    50% { box-shadow: 0 0 0 14px rgba(245,158,11,0); }
+  }
+  .slow-speak { font-size: 0.78rem; color: var(--muted); }
+  .slow-speak a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 500; }
+  .slow-speak a:hover { text-decoration: underline; }
+
+  /* ── Input ───────────────────────────────────── */
+  .input-area { display: flex; gap: 10px; margin-bottom: 10px; }
+  .input-area input {
+    flex: 1; padding: 13px 18px; border-radius: var(--radius);
+    border: 2px solid var(--border); background: transparent; color: var(--text);
+    font-size: 1.1rem; outline: none; transition: border-color 0.2s; letter-spacing: 1px;
+  }
+  .input-area input:focus { border-color: var(--accent); }
+  .input-area input.correct { border-color: var(--success); }
+  .input-area input.wrong { border-color: var(--error); animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); } 80% { transform: translateX(4px); }
+  }
+
+  .check-btn {
+    padding: 13px 26px; border-radius: var(--radius); border: none;
+    background: var(--success); color: #000; font-weight: 700; font-size: 1rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .check-btn:hover { filter: brightness(1.1); }
+  .check-btn:active { transform: scale(0.96); }
+
+  /* ── Feedback ────────────────────────────────── */
+  .feedback { text-align: center; min-height: 32px; line-height: 32px; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+  .feedback.correct { color: var(--success); }
+  .feedback.wrong { color: var(--error); }
+  .correct-spelling { text-align: center; color: var(--muted); font-size: 0.82rem; min-height: 20px; }
+  .correct-spelling span { color: var(--success); font-weight: 600; letter-spacing: 1px; }
+
+  /* ── Buttons ─────────────────────────────────── */
+  .actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; padding: 11px 18px; border-radius: 999px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; transition: all 0.2s; text-align: center;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.spell-entry {
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    border: none; color: #fff; font-weight: 700; font-size: 0.95rem;
+    padding: 13px 20px; margin-top: 4px;
+  }
+  .btn.spell-entry:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+  .btn.back-btn {
+    flex: 0 0 auto; padding: 9px 16px; font-size: 0.82rem;
+  }
+
+  /* ── History ─────────────────────────────────── */
+  .history {
+    margin-top: 20px; max-height: 150px; overflow-y: auto;
+    border-top: 1px solid var(--border); padding-top: 14px;
+  }
+  .history-title { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 0; font-size: 0.85rem; border-bottom: 1px solid rgba(51,65,85,0.3);
+  }
+  .history-item .word { font-weight: 500; }
+  .history-item .attempt { color: var(--muted); }
+  .history-item .icon { margin-right: 6px; }
+  .history-item .word-meaning-inline { color: var(--warning); font-size: 0.74rem; }
+
+  /* ── Letter slots ────────────────────────────── */
+  .letter-slots {
+    display: flex; justify-content: center; gap: 8px; margin-bottom: 18px;
+    flex-wrap: wrap; padding: 8px 0;
+  }
+  .letter-slot {
+    width: 46px; height: 54px;
+    border: 2px dashed var(--border); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 700; color: var(--text);
+    text-transform: lowercase; transition: all 0.15s;
+    background: var(--slot-bg);
+  }
+  .letter-slot.filled {
+    border-style: solid; border-color: var(--accent);
+    background: rgba(99,102,241,0.18); animation: slot-pop 0.2s ease;
+  }
+  .letter-slot.correct-slot { border-color: var(--success); background: rgba(34,197,94,0.18); }
+  .letter-slot.wrong-slot { border-color: var(--error); background: rgba(239,68,68,0.18); }
+  @keyframes slot-pop {
+    0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); }
+  }
+
+  /* ── Letter keyboard ─────────────────────────── */
+  .letter-keyboard { text-align: center; margin-bottom: 12px; }
+  .keyboard-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
+  .letter-key {
+    width: 42px; height: 46px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--key-bg);
+    color: var(--text); font-size: 1.15rem; font-weight: 600;
+    cursor: pointer; transition: all 0.12s; text-transform: lowercase;
+  }
+  .letter-key:hover {
+    background: var(--key-hover); border-color: var(--key-hover);
+    color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  }
+  .letter-key:active { transform: scale(0.9); }
+  .keyboard-actions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+  .key-action {
+    height: 44px; padding: 0 18px; border-radius: 10px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+  }
+  .key-action:hover { border-color: var(--accent); color: var(--text); }
+  .key-action.danger:hover { border-color: var(--error); color: var(--error); }
+  .key-action.check-key { background: var(--success); color: #000; font-weight: 700; border-color: var(--success); }
+
+  /* ── Confetti ────────────────────────────────── */
+  .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+  .confetti-piece {
+    position: absolute; width: 10px; height: 10px; border-radius: 2px;
+    animation: confetti-fall 1.2s ease-out forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ── View switching ──────────────────────────── */
+  .view { display: none; }
+  .view.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Theme picker -->
+  <div class="theme-picker">
+    <div class="theme-dot indigo active" data-theme="indigo" title="Indigo Dark"></div>
+    <div class="theme-dot light" data-theme="light" title="Light"></div>
+    <div class="theme-dot ocean" data-theme="ocean" title="Ocean Blue"></div>
+    <div class="theme-dot forest" data-theme="forest" title="Forest Green"></div>
+    <div class="theme-dot sunset" data-theme="sunset" title="Sunset Pink"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- VIEW 1: Main listening + typing game        -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="view active" id="viewMain">
+    <div class="header">
+      <h1>🐝 <span class="bee">Spelling</span> Bee</h1>
+      <p>Listen to the word and spell it correctly</p>
+    </div>
+
+    <div class="difficulty-bar">
+      <button class="diff-btn active" data-level="easy">🌱 Easy</button>
+      <button class="diff-btn" data-level="medium">🌿 Medium</button>
+      <button class="diff-btn" data-level="hard">🌳 Hard</button>
+      <button class="diff-btn" data-level="custom">✏️ Custom</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="value score" id="score1">0</div><div class="label">Score</div></div>
+      <div class="stat"><div class="value streak" id="streak1">0</div><div class="label">Streak 🔥</div></div>
+      <div class="stat"><div class="value" id="round1">0</div><div class="label">Round</div></div>
+    </div>
+
+    <div class="word-area">
+      <div class="word-hint" id="wordHint1">Click the speaker to hear the word</div>
+      <div class="word-meaning" id="wordMeaning1"></div>
+      <div class="speaker-row">
+        <button class="speak-btn" id="speakBtn1" title="Listen">🔊</button>
+        <span class="slow-speak">or <a id="slowSpeak1">say it slowly</a></span>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="spellInput1" placeholder="Type the spelling here..." autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="check-btn" id="checkBtn1">Check</button>
+    </div>
+
+    <div class="feedback" id="feedback1"></div>
+    <div class="correct-spelling" id="correctSpelling1"></div>
+
+    <div class="actions">
+      <button class="btn" id="skipBtn1">⏭ Skip</button>
+      <button class="btn" id="revealBtn1">👁 Reveal</button>
+      <button class="btn primary" id="newWordBtn1">🎲 New Word</button>
+    </div>
+
+    <!-- Spell mode entry button -->
+    <div class="actions">
+      <button class="btn spell-entry" id="spellModeBtn">🔤 拼写模式 (Click Letters)</button>
+    </div>
+
+    <div class="actions" id="customArea1" style="display:none; margin-top:0;">
+      <input type="text" id="customWord1" placeholder="Enter your own word..." style="flex:1; padding:10px 14px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:0.85rem; outline:none;">
+      <button class="btn primary" id="addCustomBtn1" style="flex:0 0 auto;">+ Add</button>
+    </div>
+
+    <div class="history" id="historyArea1" style="display:none;">
+      <div class="history-title">📋 History</div>
+      <div id="historyList1"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- VIEW 2: Spelling with letter tiles          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="view" id="viewSpell">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+      <button class="btn back-btn" id="backBtn">← 返回</button>
+      <div style="flex:1; text-align:center;">
+        <h2 style="font-size:1.3rem; font-weight:700;">🔤 拼写模式</h2>
+        <p style="color:var(--muted); font-size:0.8rem;">Click letters to spell the word</p>
+      </div>
+    </div>
+
+    <div class="difficulty-bar">
+      <button class="diff-btn active" data-level="easy">🌱 Easy</button>
+      <button class="diff-btn" data-level="medium">🌿 Medium</button>
+      <button class="diff-btn" data-level="hard">🌳 Hard</button>
+      <button class="diff-btn" data-level="custom">✏️ Custom</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="value score" id="score2">0</div><div class="label">Score</div></div>
+      <div class="stat"><div class="value streak" id="streak2">0</div><div class="label">Streak 🔥</div></div>
+      <div class="stat"><div class="value" id="round2">0</div><div class="label">Round</div></div>
+    </div>
+
+    <div class="word-area">
+      <div class="word-meaning big" id="wordMeaning2">🎯 点击喇叭听单词</div>
+      <div class="word-hint" id="wordHint2">Click 🔊 to hear the word, then click letters below</div>
+      <div class="speaker-row">
+        <button class="speak-btn" id="speakBtn2" title="Listen">🔊</button>
+        <span class="slow-speak">or <a id="slowSpeak2">say it slowly</a></span>
+      </div>
+    </div>
+
+    <!-- Letter slots -->
+    <div class="letter-slots" id="letterSlots2"></div>
+
+    <!-- Letter keyboard -->
+    <div class="letter-keyboard" id="letterKeyboard2"></div>
+
+    <div class="feedback" id="feedback2"></div>
+    <div class="correct-spelling" id="correctSpelling2"></div>
+
+    <div class="actions">
+      <button class="btn" id="skipBtn2">⏭ Skip</button>
+      <button class="btn" id="revealBtn2">👁 Reveal</button>
+      <button class="btn primary" id="newWordBtn2">🎲 New Word</button>
+    </div>
+
+    <div class="actions" id="customArea2" style="display:none; margin-top:0;">
+      <input type="text" id="customWord2" placeholder="Enter your own word..." style="flex:1; padding:10px 14px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:0.85rem; outline:none;">
+      <button class="btn primary" id="addCustomBtn2" style="flex:0 0 auto;">+ Add</button>
+    </div>
+
+    <div class="history" id="historyArea2" style="display:none;">
+      <div class="history-title">📋 History</div>
+      <div id="historyList2"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+(function() {
+  // ── Word lists ──────────────────────────────────
+  const wordLists = {
+    easy: [
+      { word: 'apple', meaning: '苹果' }, { word: 'book', meaning: '书' },
+      { word: 'cat', meaning: '猫' }, { word: 'dog', meaning: '狗' },
+      { word: 'fish', meaning: '鱼' }, { word: 'happy', meaning: '快乐的' },
+      { word: 'house', meaning: '房子' }, { word: 'school', meaning: '学校' },
+      { word: 'tree', meaning: '树' }, { word: 'water', meaning: '水' },
+      { word: 'family', meaning: '家庭' }, { word: 'friend', meaning: '朋友' },
+      { word: 'music', meaning: '音乐' }, { word: 'table', meaning: '桌子' },
+      { word: 'garden', meaning: '花园' },
+    ],
+    medium: [
+      { word: 'beautiful', meaning: '美丽的' }, { word: 'chocolate', meaning: '巧克力' },
+      { word: 'dinosaur', meaning: '恐龙' }, { word: 'elephant', meaning: '大象' },
+      { word: 'favorite', meaning: '最喜欢的' }, { word: 'guitar', meaning: '吉他' },
+      { word: 'hospital', meaning: '医院' }, { word: 'language', meaning: '语言' },
+      { word: 'library', meaning: '图书馆' }, { word: 'mountain', meaning: '山' },
+      { word: 'neighbor', meaning: '邻居' }, { word: 'puzzle', meaning: '拼图；谜题' },
+      { word: 'sandwich', meaning: '三明治' }, { word: 'tomorrow', meaning: '明天' },
+      { word: 'umbrella', meaning: '雨伞' },
+    ],
+    hard: [
+      { word: 'accommodation', meaning: '住宿；适应' }, { word: 'bureaucracy', meaning: '官僚机构' },
+      { word: 'conscience', meaning: '良心' }, { word: 'embarrassment', meaning: '尴尬' },
+      { word: 'fluorescent', meaning: '荧光的' }, { word: 'guarantee', meaning: '保证' },
+      { word: 'hierarchy', meaning: '等级制度' }, { word: 'idiosyncrasy', meaning: '特质；癖好' },
+      { word: 'kaleidoscope', meaning: '万花筒' }, { word: 'lieutenant', meaning: '中尉；副官' },
+      { word: 'maneuver', meaning: '策略；机动' }, { word: 'nauseous', meaning: '恶心的' },
+      { word: 'onomatopoeia', meaning: '拟声词' }, { word: 'pharaoh', meaning: '法老' },
+      { word: 'questionnaire', meaning: '问卷' }, { word: 'renaissance', meaning: '文艺复兴' },
+      { word: 'silhouette', meaning: '剪影；轮廓' }, { word: 'tyrannosaurus', meaning: '霸王龙' },
+      { word: 'unconscious', meaning: '无意识的' }, { word: 'xylophone', meaning: '木琴' },
+    ],
+  };
+
+  // ── State ────────────────────────────────────────
+  let currentWord = null, score = 0, streak = 0, bestStreak = 0, round = 0;
+  let level = 'easy', history = [], customWords = [], revealed = false;
+  let clickLetters = [];
+  let usedWords = { easy: [], medium: [], hard: [], custom: [] };
+  let currentView = 'main';
+
+  // ── Helper ───────────────────────────────────────
+  const $ = id => document.getElementById(id);
+
+  function getViewPrefix() { return currentView === 'main' ? '1' : '2'; }
+  function v(id) { return $(id + getViewPrefix()); }
+
+  // ── Theme ────────────────────────────────────────
+  const themeDots = document.querySelectorAll('.theme-dot');
+  const savedTheme = localStorage.getItem('spelling-bee-theme') || 'indigo';
+  document.body.setAttribute('data-theme', savedTheme);
+  themeDots.forEach(d => {
+    d.classList.toggle('active', d.dataset.theme === savedTheme);
+    d.addEventListener('click', () => {
+      const theme = d.dataset.theme;
+      document.body.setAttribute('data-theme', theme);
+      themeDots.forEach(td => td.classList.remove('active'));
+      d.classList.add('active');
+      localStorage.setItem('spelling-bee-theme', theme);
+    });
+  });
+
+  // ── Speech ───────────────────────────────────────
+  function speak(text, rate = 0.85) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = rate; u.pitch = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const en = voices.find(v => v.lang === 'en-US' && v.name.includes('Google'))
+            || voices.find(v => v.lang === 'en-US')
+            || voices.find(v => v.lang.startsWith('en'));
+    if (en) u.voice = en;
+    const spk = v('speakBtn');
+    spk.classList.add('speaking');
+    u.onend = () => spk.classList.remove('speaking');
+    u.onerror = () => spk.classList.remove('speaking');
+    window.speechSynthesis.speak(u);
+  }
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+  // ── Confetti ─────────────────────────────────────
+  function spawnConfetti() {
+    const colors = ['#6366f1','#22c55e','#f59e0b','#ef4444','#ec4899','#3b82f6','#8b5cf6'];
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 50; i++) {
+      const p = document.createElement('div'); p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = -(Math.random() * 40) + 'px';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDelay = Math.random() * 0.5 + 's';
+      p.style.animationDuration = (1 + Math.random()) + 's';
+      p.style.width = (6 + Math.random() * 10) + 'px';
+      p.style.height = (6 + Math.random() * 10) + 'px';
+      frag.appendChild(p);
+    }
+    $('confettiContainer').appendChild(frag);
+    setTimeout(() => { $('confettiContainer').innerHTML = ''; }, 2000);
+  }
+
+  // ── Word selection ──────────────────────────────
+  function getWordList() {
+    return level === 'custom' ? customWords : (wordLists[level] || wordLists.easy);
+  }
+
+  function pickWord() {
+    const list = getWordList();
+    const used = usedWords[level] || [];
+    const avail = list.filter(w => !used.includes(w.word));
+    if (!avail.length) { usedWords[level] = []; return list[Math.floor(Math.random() * list.length)]; }
+    return avail[Math.floor(Math.random() * avail.length)];
+  }
+
+  function loadNewWord() {
+    currentWord = pickWord();
+    if (!currentWord) return;
+    usedWords[level].push(currentWord.word);
+    revealed = false; clickLetters = [];
+    v('wordHint').textContent = currentView === 'main' ? 'Click the speaker to hear the word' : 'Click 🔊 to hear the word, then click letters below';
+    v('wordMeaning').textContent = '';
+    if (currentView === 'main') {
+      v('spellInput').value = '';
+      v('spellInput').className = '';
+      v('spellInput').focus();
+    }
+    v('feedback').textContent = ''; v('feedback').className = 'feedback';
+    v('correctSpelling').innerHTML = '';
+    if (currentView === 'spell') { buildLetterSlots(); buildKeyboard(); renderClickSlots(); }
+    v('revealBtn').style.display = '';
+  }
+
+  // ── Letter slots & keyboard (spell view) ─────────
+  function buildLetterSlots() {
+    if (!currentWord) return;
+    const el = v('letterSlots');
+    el.innerHTML = '';
+    for (let i = 0; i < currentWord.word.length; i++) {
+      const s = document.createElement('div'); s.className = 'letter-slot';
+      s.dataset.index = i; s.textContent = ''; el.appendChild(s);
+    }
+    clickLetters = [];
+  }
+
+  function buildKeyboard() {
+    const rows = ['qwertyuiop'.split(''), 'asdfghjkl'.split(''), 'zxcvbnm'.split('')];
+    const el = v('letterKeyboard'); el.innerHTML = '';
+    rows.forEach(rl => {
+      const rd = document.createElement('div'); rd.className = 'keyboard-row';
+      rl.forEach(l => {
+        const k = document.createElement('button'); k.className = 'letter-key';
+        k.textContent = l;
+        k.addEventListener('click', () => addClickLetter(l));
+        rd.appendChild(k);
+      });
+      el.appendChild(rd);
+    });
+    const ar = document.createElement('div'); ar.className = 'keyboard-actions';
+    const bk = document.createElement('button'); bk.className = 'key-action danger'; bk.innerHTML = '⌫ Delete';
+    bk.addEventListener('click', removeClickLetter);
+    const cl = document.createElement('button'); cl.className = 'key-action'; cl.innerHTML = '✕ Clear';
+    cl.addEventListener('click', clearClickLetters);
+    const ck = document.createElement('button'); ck.className = 'key-action check-key'; ck.innerHTML = '✓ Check';
+    ck.addEventListener('click', checkSpellAnswer);
+    ar.appendChild(bk); ar.appendChild(cl); ar.appendChild(ck);
+    el.appendChild(ar);
+  }
+
+  function addClickLetter(l) {
+    if (!currentWord || revealed) return;
+    if (clickLetters.length >= currentWord.word.length) return;
+    clickLetters.push(l); renderClickSlots();
+  }
+  function removeClickLetter() { if (clickLetters.length) { clickLetters.pop(); renderClickSlots(); } }
+  function clearClickLetters() { clickLetters = []; renderClickSlots(); }
+
+  function renderClickSlots() {
+    const slots = v('letterSlots').querySelectorAll('.letter-slot');
+    slots.forEach((s, i) => {
+      s.className = 'letter-slot';
+      if (i < clickLetters.length) { s.textContent = clickLetters[i]; s.classList.add('filled'); }
+      else { s.textContent = ''; }
+    });
+  }
+
+  // ── Check answers ───────────────────────────────
+  function checkTypingAnswer() {
+    if (!currentWord || revealed) return;
+    const ans = v('spellInput').value.trim();
+    if (!ans) { v('spellInput').focus(); return; }
+    const ok = ans.toLowerCase() === currentWord.word.toLowerCase();
+    processResult(ok, ans);
+    if (ok) v('spellInput').className = 'correct'; else v('spellInput').className = 'wrong';
+  }
+
+  function checkSpellAnswer() {
+    if (!currentWord || revealed) return;
+    const ans = clickLetters.join('');
+    if (!ans) return;
+    const ok = ans.toLowerCase() === currentWord.word.toLowerCase();
+    const slots = v('letterSlots').querySelectorAll('.letter-slot');
+    if (ok) { slots.forEach(s => s.classList.add('correct-slot')); }
+    else {
+      slots.forEach((s, i) => {
+        if ((clickLetters[i] || '').toLowerCase() !== (currentWord.word[i] || '').toLowerCase()) s.classList.add('wrong-slot');
+        else s.classList.add('correct-slot');
+      });
+    }
+    processResult(ok, ans);
+  }
+
+  function processResult(ok, ans) {
+    if (ok) {
+      v('feedback').textContent = '✅ Correct! Well done!';
+      v('feedback').className = 'feedback correct';
+      v('correctSpelling').innerHTML = '';
+      score += level === 'hard' ? 30 : level === 'medium' ? 20 : 10;
+      streak++; if (streak > bestStreak) bestStreak = streak;
+      spawnConfetti();
+    } else {
+      v('feedback').textContent = '❌ Not quite right. Try again!';
+      v('feedback').className = 'feedback wrong';
+      v('correctSpelling').innerHTML = 'The correct spelling is: <span>' + currentWord.word + '</span>';
+      streak = 0; revealed = true;
+    }
+    round++; updateStats();
+    addHistory(currentWord.word, currentWord.meaning, ans, ok);
+    if (ok) setTimeout(loadNewWord, 1400);
+  }
+
+  function revealWord() {
+    if (!currentWord) return;
+    if (currentView === 'main') v('spellInput').value = currentWord.word;
+    else { clickLetters = currentWord.word.split(''); renderClickSlots(); }
+    v('correctSpelling').innerHTML = 'The word is: <span>' + currentWord.word + '</span>';
+    v('feedback').textContent = '👁 Word revealed. No points this round.';
+    v('feedback').className = 'feedback';
+    v('wordMeaning').textContent = '💡 ' + (currentWord.meaning || '暂无释义');
+    revealed = true; streak = 0; round++; updateStats();
+    addHistory(currentWord.word, currentWord.meaning, '(revealed)', false);
+    v('revealBtn').style.display = 'none';
+  }
+
+  function skipWord() {
+    if (!currentWord) return;
+    v('correctSpelling').innerHTML = 'Skipped. The word was: <span>' + currentWord.word + '</span>';
+    v('feedback').textContent = ''; v('feedback').className = 'feedback';
+    streak = 0; round++; updateStats(); clickLetters = [];
+    addHistory(currentWord.word, currentWord.meaning, '(skipped)', false);
+    loadNewWord();
+  }
+
+  // ── History ──────────────────────────────────────
+  function addHistory(word, meaning, attempt, correct) {
+    history.unshift({ word, meaning, attempt, correct });
+    if (history.length > 20) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const area = v('historyArea'), list = v('historyList');
+    if (!history.length) { area.style.display = 'none'; return; }
+    area.style.display = 'block';
+    list.innerHTML = history.map(h =>
+      `<div class="history-item">
+        <div><span class="icon">${h.correct ? '✅' : '❌'}</span><span class="word">${h.word}</span><span class="word-meaning-inline"> — ${h.meaning || ''}</span></div>
+        <span class="attempt">${h.attempt}</span>
+      </div>`
+    ).join('');
+  }
+
+  function updateStats() {
+    v('score').textContent = score;
+    v('streak').textContent = streak > 0 ? streak : bestStreak;
+    v('round').textContent = round;
+    if (streak >= 3) v('streak').textContent = streak + ' 🔥';
+  }
+
+  function resetGame(preserveWords) {
+    score = 0; streak = 0; round = 0; history = [];
+    if (!preserveWords) usedWords = { easy: [], medium: [], hard: [], custom: [] };
+    updateStats(); renderHistory();
+  }
+
+  // ── View switching ──────────────────────────────
+  function switchView(view) {
+    currentView = view;
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    if (view === 'main') $('viewMain').classList.add('active');
+    else $('viewSpell').classList.add('active');
+    // Re-bind diff buttons in the active view
+    bindDiffButtons();
+    // Sync state to the new view's UI
+    updateStats();
+    renderHistory();
+    if (currentWord) {
+      v('wordMeaning').textContent = '';
+      if (view === 'spell') { buildLetterSlots(); buildKeyboard(); renderClickSlots(); }
+      else { v('spellInput').focus(); }
+    }
+    if (level === 'custom') v('customArea').style.display = 'flex';
+  }
+
+  // ── Bind difficulty buttons (per view) ──────────
+  function bindDiffButtons() {
+    const prefix = getViewPrefix();
+    const btns = document.querySelectorAll('#viewMain .diff-btn, #viewSpell .diff-btn');
+    // First, set the active one
+    btns.forEach(b => {
+      b.classList.toggle('active', b.dataset.level === level);
+      // Remove old listeners by cloning
+      const clone = b.cloneNode(true);
+      b.parentNode.replaceChild(clone, b);
+    });
+    // Re-bind
+    document.querySelectorAll('#viewMain .diff-btn, #viewSpell .diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        level = btn.dataset.level;
+        // Update all diff buttons across both views
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(`.diff-btn[data-level="${level}"]`).forEach(b => b.classList.add('active'));
+        v('customArea').style.display = level === 'custom' ? 'flex' : 'none';
+        resetGame(true);
+        loadNewWord();
+      });
+    });
+  }
+
+  // ── Events ──────────────────────────────────────
+  // View switch
+  $('spellModeBtn').addEventListener('click', () => switchView('spell'));
+  $('backBtn').addEventListener('click', () => switchView('main'));
+
+  // Initial bind
+  bindDiffButtons();
+
+  // Main view events
+  $('speakBtn1').addEventListener('click', () => {
+    if (currentWord) { speak(currentWord.word); v('wordHint').textContent = '🔊 Listening... Type what you hear!'; v('wordMeaning').textContent = ''; }
+  });
+  $('slowSpeak1').addEventListener('click', e => { e.preventDefault(); if (currentWord) { speak(currentWord.word, 0.5); v('wordHint').textContent = '🐢 Slow pronunciation...'; } });
+  $('checkBtn1').addEventListener('click', checkTypingAnswer);
+  $('spellInput1').addEventListener('keydown', e => { if (e.key === 'Enter') checkTypingAnswer(); });
+  $('skipBtn1').addEventListener('click', skipWord);
+  $('revealBtn1').addEventListener('click', revealWord);
+  $('newWordBtn1').addEventListener('click', () => { round++; updateStats(); loadNewWord(); });
+
+  // Spell view events
+  $('speakBtn2').addEventListener('click', () => {
+    if (currentWord) { speak(currentWord.word); v('wordHint').textContent = '🔊 Listening...'; v('wordMeaning').textContent = '🎯 ' + (currentWord.meaning || ''); }
+  });
+  $('slowSpeak2').addEventListener('click', e => { e.preventDefault(); if (currentWord) { speak(currentWord.word, 0.5); v('wordHint').textContent = '🐢 Slow pronunciation...'; } });
+  $('skipBtn2').addEventListener('click', skipWord);
+  $('revealBtn2').addEventListener('click', revealWord);
+  $('newWordBtn2').addEventListener('click', () => { round++; updateStats(); loadNewWord(); });
+
+  // Custom word (main)
+  $('addCustomBtn1').addEventListener('click', () => {
+    const w = $('customWord1').value.trim();
+    if (!w) return;
+    if (!/^[a-zA-Z]+$/.test(w)) { v('feedback').textContent = '⚠️ Only English letters'; v('feedback').className = 'feedback wrong'; return; }
+    customWords.push({ word: w.toLowerCase(), meaning: '自定义单词' });
+    $('customWord1').value = '';
+    v('feedback').textContent = '✅ Added "' + w + '"'; v('feedback').className = 'feedback correct';
+    loadNewWord();
+  });
+  $('customWord1').addEventListener('keydown', e => { if (e.key === 'Enter') $('addCustomBtn1').click(); });
+
+  // Custom word (spell)
+  $('addCustomBtn2').addEventListener('click', () => {
+    const w = $('customWord2').value.trim();
+    if (!w) return;
+    if (!/^[a-zA-Z]+$/.test(w)) { v('feedback').textContent = '⚠️ Only English letters'; v('feedback').className = 'feedback wrong'; return; }
+    customWords.push({ word: w.toLowerCase(), meaning: '自定义单词' });
+    $('customWord2').value = '';
+    v('feedback').textContent = '✅ Added "' + w + '"'; v('feedback').className = 'feedback correct';
+    loadNewWord();
+  });
+  $('customWord2').addEventListener('keydown', e => { if (e.key === 'Enter') $('addCustomBtn2').click(); });
+
+  // Global keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    // Ctrl+Space to speak (works in both views)
+    if (e.ctrlKey && e.code === 'Space') { e.preventDefault(); v('speakBtn').click(); return; }
+
+    // Keyboard input in spell mode
+    if (currentView === 'spell' && !revealed) {
+      // Letter keys
+      if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        e.preventDefault();
+        addClickLetter(e.key.toLowerCase());
+        return;
+      }
+      // Backspace → delete last letter
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        removeClickLetter();
+        return;
+      }
+      // Enter → check answer
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        checkSpellAnswer();
+        return;
+      }
+      // Escape → clear all
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        clearClickLetters();
+        return;
+      }
+    }
+  });
+
+  // ── Init ────────────────────────────────────────
+  loadNewWord(); updateStats();
+})();
+</script>
+</body>
+</html>

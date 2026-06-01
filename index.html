@@ -6,15 +6,15 @@
 <title>Spell It</title>
 <style>
   :root {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --border: #334155;
-    --text: #f1f5f9;
-    --muted: #64748b;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #94a3b8;
     --accent: #6366f1;
-    --success: #22c55e;
-    --error: #ef4444;
-    --warning: #f59e0b;
+    --success: #16a34a;
+    --error: #dc2626;
+    --warning: #d97706;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -281,7 +281,7 @@
   }
 </style>
 </head>
-<body>
+<body data-theme="light">
 
 <!-- Top bar -->
 <div class="top-bar">
@@ -292,8 +292,8 @@
     <span>第 <span class="val" id="round">0</span> 轮</span>
   </div>
   <div class="theme-dots">
-    <div class="theme-dot dot-indigo active" data-theme="indigo"></div>
-    <div class="theme-dot dot-light"  data-theme="light"></div>
+    <div class="theme-dot dot-indigo" data-theme="indigo"></div>
+    <div class="theme-dot dot-light active"  data-theme="light"></div>
     <div class="theme-dot dot-ocean"  data-theme="ocean"></div>
     <div class="theme-dot dot-forest" data-theme="forest"></div>
     <div class="theme-dot dot-sunset" data-theme="sunset"></div>
@@ -372,7 +372,7 @@
 
   // ── Theme ──────────────────────────────────
   const dots = document.querySelectorAll('.theme-dot');
-  const saved = localStorage.getItem('spell-it-theme') || 'indigo';
+  const saved = localStorage.getItem('spell-it-theme') || 'light';
   document.body.dataset.theme = saved;
   dots.forEach(d => {
     d.classList.toggle('active', d.dataset.theme === saved);
